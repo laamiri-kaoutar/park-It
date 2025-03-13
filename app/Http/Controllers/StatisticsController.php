@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Place;
 use App\Models\Parking;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 
 class StatisticsController extends Controller
 {
     public function index(){
+
         $parkingNumber = Parking::count(); 
         
         $parkingWithplaces = Parking::select('name')->withCount('places')->get(); 
@@ -17,11 +20,11 @@ class StatisticsController extends Controller
 
         $placeswithReservations= Place::select('number')->withCount('reservations')->get(); 
 
-        $mostReservedPlace = DB::table('places p')
-                                ->join('reservations r','r.place_id' , 'p.id' )
-                                ->select('p.number' , DB::raw('Count(r.id) as total_reservs group by p.id'))
-                                ->where('total_reservs' , DB::raw('Max(total_reservs)'))
-                                ->get();
+        // $mostReservedPlace = DB::table('places p')
+        //                         ->join('reservations r','r.place_id' , 'p.id' )
+        //                         ->select('p.number' , DB::raw('Count(r.id) as total_reservs group by p.id'))
+        //                         ->where('total_reservs' , DB::raw('Max(total_reservs)'))
+        //                         ->get();
         $mostReservedPlace = DB::table('places as p')
                                 ->join('reservations as r', 'r.place_id', '=', 'p.id')
                                 ->select('p.number', DB::raw('COUNT(r.id) as total_reservs'))
@@ -34,6 +37,8 @@ class StatisticsController extends Controller
                                     ) as subquery
                                 )')
                                 ->get();
+        return response()->json(compact('parkingNumber', 'parkingWithplaces', 'totalPlaces', 'placeswithReservations', 'mostReservedPlace'));
+                     
 
 
         // {{$recette->comments_count}}

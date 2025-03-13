@@ -11,8 +11,8 @@ use App\Http\Requests\StorePlaceRequest;
 class PlaceController extends Controller
 {
     public function __construct(){
-        $this->middleware('auth:sanctum');
-        $this->middleware(IsAdmin::class)->except(['index' ,'show']);
+        // $this->middleware('auth:sanctum');
+        // $this->middleware(IsAdmin::class)->except(['index' ,'show' ,'search']);
 
     }
     /**
@@ -36,6 +36,8 @@ class PlaceController extends Controller
         ];
     }
 
+
+
     /**
      * Display the specified resource.
      */
@@ -45,6 +47,19 @@ class PlaceController extends Controller
             'place'=> $place
         ];
     }
+
+    public function search($searchKey)
+    {
+        // dd($searchKey);
+
+        $places = Place::where('number', 'LIKE', "%{$searchKey}%")->get();
+        
+        return [
+            'places' => $places
+        ];
+    }
+
+
 
     /**
      * Update the specified resource in storage.

@@ -1,10 +1,12 @@
 <?php
 
 use Illuminate\Http\Request;
+use App\Http\Middleware\IsAdmin;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\ParkingController;
+use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ReservationController;
 
 
@@ -23,6 +25,10 @@ Route::get('/test', function () {
 
 Route::get('/reservations', [ReservationController::class, 'index']); 
 Route::get('/places/{place}/reservations', [ReservationController::class, 'index']); 
+Route::get('/Dashboard/statistics', [StatisticsController::class, 'index'])->middleware(['auth:sanctum', IsAdmin::class]);
+Route::get('/places/search/{searchkey}', [PlaceController::class, 'search']);
+
+
 
 Route::post('/places/{place}/reservations', [ReservationController::class, 'store'])->middleware('auth:sanctum'); 
 Route::put('/reservations/{reservation}', [ReservationController::class, 'update']); 

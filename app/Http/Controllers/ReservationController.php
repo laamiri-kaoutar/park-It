@@ -4,10 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Place;
 use App\Models\Reservation;
+use App\Http\Middleware\IsClient;
 use App\Http\Requests\StoreReservationRequest;
 
 class ReservationController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum');
+        $this->middleware(IsClient::class)->only(['store', 'update', 'destroy']);
+
+    }
     /**
      * Display a listing of the resource.
      */
