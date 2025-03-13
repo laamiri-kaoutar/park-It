@@ -28,7 +28,7 @@ class PlaceController extends Controller
      */
     public function store(StorePlaceRequest $request)
     {
-        
+
         $validated = $request->validated();
         $place = Place::create($validated);
         return [ 

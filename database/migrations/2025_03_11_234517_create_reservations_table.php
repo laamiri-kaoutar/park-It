@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('reservations', function (Blueprint $table) {
             $table->id();
-            $table->foreingId('user_id')->contrainted()->onDelete('cascade');
-            $table->foreingId('place_id')->contrainted()->onDelete('cascade');
+            $table->foreignId('user_id')->contrainted('users')->onDelete('cascade');
+            $table->foreignId('place_id')->contrainted('places')->onDelete('cascade');
+
             $table->dateTime('start');
             $table->dateTime('end');
             $table->timestamps();
