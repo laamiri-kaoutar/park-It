@@ -7,150 +7,230 @@ use App\Models\Reservation;
 use App\Http\Middleware\IsClient;
 use App\Http\Requests\StoreReservationRequest;
 
+/**
+ * @OA\Tag(name="Reservations")
+ */
 class ReservationController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth:sanctum');
         $this->middleware(IsClient::class)->only(['store', 'update', 'destroy']);
-
     }
+
     /**
-     * Display a listing of the resource.
+     * @OA\Get(
+     *     path="/api/reservations",
+     *     summary="Get all reservations",
+     *     tags={"Reservations"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of reservations",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="user_id", type="integer", example=1),
+     *                 @OA\Property(property="place_id", type="integer", example=1),
+     *                 @OA\Property(property="start", type="string", format="date-time", example="2023-10-01T10:00:00Z"),
+     *                 @OA\Property(property="end", type="string", format="date-time", example="2023-10-01T12:00:00Z"),
+     *                 @OA\Property(property="created_at", type="string", format="date-time"),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time")
+     *             )
+     *         )
+     *     )
+     * )
      */
     public function index()
     {
-        return[ "reservations" =>Reservation::All() ];
+        return response()->json(["reservations" => Reservation::all()], 200);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * @OA\Post(
+     *     path="/api/places/{place}/reservations",
+     *     summary="Create a reservation",
+     *     tags={"Reservations"},
+     *     @OA\Parameter(
+     *         name="place",
+     *         in="path",
+     *         required=true,
+     *         description="Place ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="start", type="string", format="date-time", example="2023-10-01T10:00:00Z"),
+     *             @OA\Property(property="end", type="string", format="date-time", example="2023-10-01T12:00:00Z")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Reservation created successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer", example=1),
+     *             @OA\Property(property="user_id", type="integer", example=1),
+     *             @OA\Property(property="place_id", type="integer", example=1),
+     *             @OA\Property(property="start", type="string", format="date-time", example="2023-10-01T10:00:00Z"),
+     *             @OA\Property(property="end", type="string", format="date-time", example="2023-10-01T12:00:00Z"),
+     *             @OA\Property(property="created_at", type="string", format="date-time"),
+     *             @OA\Property(property="updated_at", type="string", format="date-time")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Place is already reserved"
+     *     )
+     * )
      */
-    public function store(StoreReservationRequest $request ,Place $place)
+    public function store(StoreReservationRequest $request, Place $place)
     {
-        // dd($place->id);
-        // dd($request->All());
-
-
         $validated = $request->validated();
-        // dd($validated);
-
         
-       
+        $exists = Reservation::where('place_id', $place->id)
+                             ->where('start', '<', $request->end)
+                             ->where('end', '>', $request->start)
+                             ->exists();
 
-
-
-
-        // $place = Place::findOrFail($request->place_id);
-
-        // $existReservations= Reservation::where('place_id',$request->place_id)
-        //                               ->whereBetween('from', [$request->from, $request->until])
-        //                               ->orWhereBetween('until', [$request->from, $request->until])
-        //                               ->orWhere(function ($query) use ($request) {
-        //                                 $query->where('from', '<=', $request->from)
-        //                                       ->where('until', '>=', $request->untill);
-        //                                 })
-        //                               ->exists();
-
-        $existReservations = Reservation::where('place_id', $place->id)
-                                      ->where('start', '<', $request->end)
-                                      ->where('end', '>', $request->start)
-                                      ->exists();
-        // dd($existReservations);
-       
-                                  
-        // if the place is reserved 
-        if ($existReservations) {
-
+        if ($exists) {
             return response()->json(['error' => 'This place is already reserved for the selected period.'], 400);
         }
 
-        // dd($request->user()->id);
         $validated['user_id'] = auth()->id();
-        // $validated['user_id'] = 1;
-
         $validated['place_id'] = $place->id;
 
-
-
         $reservation = Reservation::create($validated);
+
         return response()->json(['message' => 'Reservation created successfully!', 'reservation' => $reservation], 201);
-
-
     }
 
     /**
-     * Display the specified resource.
+     * @OA\Get(
+     *     path="/api/reservations/{reservation}",
+     *     summary="Get a reservation by ID",
+     *     tags={"Reservations"},
+     *     @OA\Parameter(
+     *         name="reservation",
+     *         in="path",
+     *         required=true,
+     *         description="Reservation ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Reservation details",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer", example=1),
+     *             @OA\Property(property="user_id", type="integer", example=1),
+     *             @OA\Property(property="place_id", type="integer", example=1),
+     *             @OA\Property(property="start", type="string", format="date-time", example="2023-10-01T10:00:00Z"),
+     *             @OA\Property(property="end", type="string", format="date-time", example="2023-10-01T12:00:00Z"),
+     *             @OA\Property(property="created_at", type="string", format="date-time"),
+     *             @OA\Property(property="updated_at", type="string", format="date-time")
+     *         )
+     *     )
+     * )
      */
     public function show(Reservation $reservation)
     {
-        return response()->json(['reservation' => $reservation]);
-        
+        return response()->json(['reservation' => $reservation], 200);
     }
 
     /**
-     * Update the specified resource in storage.
+     * @OA\Put(
+     *     path="/api/reservations/{reservation}",
+     *     summary="Update a reservation",
+     *     tags={"Reservations"},
+     *     @OA\Parameter(
+     *         name="reservation",
+     *         in="path",
+     *         required=true,
+     *         description="Reservation ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="start", type="string", format="date-time", example="2023-10-01T10:00:00Z"),
+     *             @OA\Property(property="end", type="string", format="date-time", example="2023-10-01T12:00:00Z")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Reservation updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer", example=1),
+     *             @OA\Property(property="user_id", type="integer", example=1),
+     *             @OA\Property(property="place_id", type="integer", example=1),
+     *             @OA\Property(property="start", type="string", format="date-time", example="2023-10-01T10:00:00Z"),
+     *             @OA\Property(property="end", type="string", format="date-time", example="2023-10-01T12:00:00Z"),
+     *             @OA\Property(property="created_at", type="string", format="date-time"),
+     *             @OA\Property(property="updated_at", type="string", format="date-time")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized"
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Place is already reserved"
+     *     )
+     * )
      */
     public function update(StoreReservationRequest $request, Reservation $reservation)
     {
-        // dd($place->id);
-        // dd($request->All());
-
-
-        $validated = $request->validated();
-        // dd($validated);
-
-        
-       
-
-
-
-
-        // $place = Place::findOrFail($request->place_id);
-
-        // $existReservations= Reservation::where('place_id',$request->place_id)
-        //                               ->whereBetween('from', [$request->from, $request->until])
-        //                               ->orWhereBetween('until', [$request->from, $request->until])
-        //                               ->orWhere(function ($query) use ($request) {
-        //                                 $query->where('from', '<=', $request->from)
-        //                                       ->where('until', '>=', $request->untill);
-        //                                 })
-        //                               ->exists();
-
-        $existReservations = Reservation::where('place_id', $reservation->place_id)
-                                      ->where('id','!=', $reservation->id)
-                                      ->where('start', '<', $request->end)
-                                      ->where('end', '>', $request->start)
-                                      ->exists();
-        // dd($existReservations);
-       
-                                  
-        // if the place is reserved 
-        if ($existReservations) {
-
-            return response()->json(['error' => 'This place is already reserved for the selected period.']);
+        if ($reservation->user_id !== auth()->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // dd($request->user()->id);
-        // $validated['user_id'] = auth()->id();
-        // // $validated['user_id'] = 1;
+        $validated = $request->validated();
 
-        // $validated['place_id'] = $place->id;
+        $exists = Reservation::where('place_id', $reservation->place_id)
+                             ->where('id', '!=', $reservation->id)
+                             ->where('start', '<', $request->end)
+                             ->where('end', '>', $request->start)
+                             ->exists();
 
-
+        if ($exists) {
+            return response()->json(['error' => 'This place is already reserved for the selected period.'], 400);
+        }
 
         $reservation->update($validated);
-        return response()->json(['message' => 'Reservation updated successfully!', 'reservation' => $reservation], 201);
 
-
+        return response()->json(['message' => 'Reservation updated successfully!', 'reservation' => $reservation], 200);
     }
+
     /**
-     * Remove the specified resource from storage.
+     * @OA\Delete(
+     *     path="/api/reservations/{reservation}",
+     *     summary="Delete a reservation",
+     *     tags={"Reservations"},
+     *     @OA\Parameter(
+     *         name="reservation",
+     *         in="path",
+     *         required=true,
+     *         description="Reservation ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Reservation deleted successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized"
+     *     )
+     * )
      */
     public function destroy(Reservation $reservation)
     {
+        if ($reservation->user_id !== auth()->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $reservation->delete();
-        return response()->json(['message' => 'Reservation deleted successfully!']);
-        
+        return response()->json(['message' => 'Reservation deleted successfully!'], 200);
     }
 }
